@@ -7,12 +7,12 @@ import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDWi3Ko7dncB_qdSoHEyvysZ0W9N63io0o",
-  authDomain: "maramura-test.firebaseapp.com",
-  projectId: "maramura-test",
-  storageBucket: "maramura-test.firebasestorage.app",
-  messagingSenderId: "942432359032",
-  appId: "1:942432359032:web:05544367d38b6989a7138d"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
