@@ -1,0 +1,20 @@
+{
+  "hosting": {
+    "public": "y",
+    "github": {
+    "repo": "aritos20/maramura-test",
+    "branch": "main"
+    },
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
