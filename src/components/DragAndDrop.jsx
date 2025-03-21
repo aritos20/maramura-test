@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { db } from '../firebase';
 import { collection, addDoc } from "firebase/firestore";
@@ -12,7 +12,10 @@ import {
   Alert,
   ImageList,
   ImageListItem,
-  ImageListItemBar
+  ImageListItemBar,
+  Stack,
+  Card,
+  TextField
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -21,21 +24,26 @@ import { uploadGifToFirebaseStorage } from '../helpers/uploadGifToStorage';
 
 export default function DragAndDrop({ onGifSaved }) {
   const [images, setImages] = useState([]);
+  const [gifBlob, setGifBlob] = useState(null);
+  const [gifTitle, setGifTitle] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [openSuccessSnackbar, setOpenSuccessSnackbar] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingToDb, setIsLoadingToDb] = useState(false);
   const [gif, setGif] = useState(null);
   let counter = 0;
   
   const getUniqueId = () => counter++;
 
   const handleGifSave = async () => {
-    if (!gif) return;
+    if (!gifBlob) return;
+    setIsLoadingToDb(true);
     try {
+      const gifUrl = await uploadGifToFirebaseStorage(gifBlob);
       await addDoc(collection(db, 'gifs'), {
         gif: {
-          src: gif,
-          title: "gif generado",
+          src: gifUrl,
+          title: gifTitle || 'Nuevo Gif',
         },
         imagenes: images.map((img) => img.preview)
       })
@@ -45,6 +53,8 @@ export default function DragAndDrop({ onGifSaved }) {
     } catch (error) {
       console.log(error);
       setOpenSnackbar(true);
+    } finally {
+      setIsLoadingToDb(false);
     }
   }
 
@@ -72,7 +82,7 @@ export default function DragAndDrop({ onGifSaved }) {
         quality: 10,
         width: canvas.width,
         height: canvas.height,
-        workerScript: '/node_modules/gif.js/dist/gif.worker.js',
+        workerScript: '/gif.worker.js',
         repeat: 0,
         background: 'black'
       });
@@ -85,7 +95,9 @@ export default function DragAndDrop({ onGifSaved }) {
       }
 
       gif.on('finished', async (blob) => {
-        const gifUrl = await uploadGifToFirebaseStorage(blob);
+        setGifBlob(blob);
+        const gifUrl = URL.createObjectURL(blob);
+        setGif(gifUrl);
         if (gifUrl === "error" || !gifUrl) {
           setOpenSnackbar(true);
         } else {
@@ -98,7 +110,7 @@ export default function DragAndDrop({ onGifSaved }) {
       setOpenSnackbar(true);
       console.log(error);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false);;
     }
   };
 
@@ -131,6 +143,12 @@ export default function DragAndDrop({ onGifSaved }) {
     setImages(images.filter((img) => img.id !== imageToRemove.id));
   };
 
+  useEffect(() => {
+    return () => {
+      URL.revokeObjectURL(gifBlob);
+    }
+  }, [gifBlob])
+
   return (
     <>
       <Box sx={{ width: '100%', p: 2 }}>
@@ -139,8 +157,8 @@ export default function DragAndDrop({ onGifSaved }) {
           sx={{
             p: 3,
             border: '2px dashed',
-            borderColor: isDragActive ? 'primary.main' : 'grey.400',
-            borderRadius: 2,
+            borderColor: isDragActive ? 'background.paper' : 'grey.400',
+            borderRadius: 4,
             backgroundColor: isDragActive ? 'rgba(25, 118, 210, 0.1)' : 'background.paper',
             textAlign: 'center',
             cursor: 'pointer',
@@ -153,65 +171,84 @@ export default function DragAndDrop({ onGifSaved }) {
             {isDragActive ? 'Suelta las imágenes aquí' : 'Arrastra imágenes aquí, o haz clic para seleccionar'}
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            (Sólo archivos de imagen)
+            Sólo archivos de imagen (JPG, PNG, GIF)
           </Typography>
         </Paper>
         
         {images.length > 0 && (
           <>
-            <Typography variant="h6" gutterBottom>
-              Imágenes seleccionadas ({images.length})
-            </Typography>
-
-            <ImageList
-              sx={{ width: '100%', height: 'auto' }}
-              cols={4}
-              rowHeight={200}
-              gap={8}
-            >
-              {images.map((img, index) => (
-                <ImageListItem key={index}>
-                  <img 
-                    src={img.preview}
-                    loading="lazy"
-                    style={{ objectFit: 'cover', height: '100%' }}
-                  />
-                  <ImageListItemBar 
-                    sx={{ opacity: 0.5 }}
-                    position='bottom'
-                    actionPosition='right'
-                    actionIcon={
-                      <IconButton
-                        sx={{ color: 'white' }}
-                        onClick={() => removeImage(img)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    }
-                  />
-                </ImageListItem>
-              ))}
-            </ImageList>
-            <Button
-              loading={isLoading}
-              variant="outlined"
-              color="primary" 
-              sx={{ mt: 2 }}
-              onClick={handleGifCreation}
-            >
-              Procesar imágenes
-            </Button>
-            
-            {gif && (
-              <Button
-                variant='contained'
-                color='primary'
-                onClick={handleGifSave}
-                sx={{ mt: 2, ml: 3 }}
-              >
-                Guardar GIF en la base de datos
+            <Stack direction="row" justifyContent="center" sx={{ mb: 2 }}>
+            <TextField
+              label='Titulo del Gif'
+              placeholder='Porfavor inserte el titulo de su Gif'
+              value={gifTitle}
+              onChange={(e) => setGifTitle(e.target.value)}
+              sx={{ width: 600 }}
+            />
+              </Stack>
+            <Stack direction="row" spacing={2} justifyContent="center" alignItems="center" sx={{ mb: 5 }}>
+              <Typography variant="h6" gutterBottom>
+                Imágenes seleccionadas ({images.length})
+              </Typography>
+              <Button variant="contained" onClick={() => setImages([])}>
+                Remover las imagenes seleccionadas
               </Button>
-            )}
+            </Stack>
+
+            <Card>
+              <ImageList
+                sx={{ width: '100%', height: 'auto' }}
+                cols={4}
+                rowHeight={200}
+                gap={12}
+              >
+                {images.map((img, index) => (
+                  <ImageListItem key={index}>
+                    <img 
+                      src={img.preview}
+                      loading="lazy"
+                      style={{ objectFit: 'cover', height: '100%' }}
+                    />
+                    <ImageListItemBar 
+                      sx={{ opacity: 0.5 }}
+                      position='bottom'
+                      actionPosition='right'
+                      actionIcon={
+                        <IconButton
+                          sx={{ color: 'white' }}
+                          onClick={() => removeImage(img)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      }
+                    />
+                  </ImageListItem>
+                ))}
+              </ImageList>
+            </Card>
+            <Stack direction="row" justifyContent="center" spacing={2} sx={{ mt: 3 }}>
+              <Button
+                loading={isLoading}
+                variant="contained"
+                color="primary" 
+                sx={{ mt: 2 }}
+                onClick={handleGifCreation}
+              >
+                Procesar imágenes
+              </Button>
+              
+              {gif && (
+                <Button
+                  loading={isLoadingToDb}
+                  variant='contained'
+                  color='primary'
+                  onClick={handleGifSave}
+                  sx={{ mt: 2, ml: 3 }}
+                >
+                  Guardar GIF en la base de datos
+                </Button>
+              )}
+            </Stack>
           </>
         )}
 

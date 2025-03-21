@@ -34,7 +34,6 @@ export default function DeleteGifModal({ open, setOpen, gif, handleRefreshGifs }
   const handleDelete = async () => {
     try {
       setIsLoading(true);
-      console.log(gif)
       const storage = getStorage();
       const filePath = gif.gif.src.split(`https://firebasestorage.googleapis.com/v0/b/${storage.app.options.storageBucket}/o/`)[1].split("?")[0];
       const fileRef = ref(storage, decodeURIComponent(filePath));

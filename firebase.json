@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "public",
+    "public": "dist",
     "github": {
     "repo": "aritos20/maramura-test",
     "branch": "main"

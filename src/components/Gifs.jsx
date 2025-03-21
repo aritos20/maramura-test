@@ -58,8 +58,9 @@ export default function Gifs({ refreshGifs }) {
                   component="img"
                   image={gif.gif.src}
                   alt={gif.gif.title || 'GIF'}
-                  sx={{ height: 200, objectFit: 'contain' }}
+                  sx={{ height: 200, objectFit: 'contain', mb: 1 }}
                 />
+                <Typography variant='h6'>{gif.gif.title}</Typography>
               <CardActions sx={{ mt: 1 }}>
                 <Button variant='contained' onClick={() => handleOpenModal(gif)}>Delete Gif</Button>
               </CardActions>
